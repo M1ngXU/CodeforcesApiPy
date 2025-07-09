@@ -676,7 +676,7 @@ class Submission(JSONDeserializable, Dictionaryable):
             contest_id,
             verdict,
             points,
-            base64.b64decode(source_code) if source_code else None,
+            base64.b64decode(source_code).decode() if source_code else None,
         )
 
     def __init__(
