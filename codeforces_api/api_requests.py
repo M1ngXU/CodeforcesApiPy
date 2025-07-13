@@ -16,6 +16,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import requests
+import logging
 
 from codeforces_api.api_request_maker import CodeforcesApiRequestMaker
 from codeforces_api.types import (
@@ -32,6 +33,8 @@ from codeforces_api.types import (
     User,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class CodeforcesApi(CodeforcesApiRequestMaker):
     """
@@ -47,13 +50,19 @@ class CodeforcesApi(CodeforcesApiRequestMaker):
 
         Uses different methods (POST or GET) but be aware of 413 error when using GET.
         """
-        request_data = self.generate_request(method, **payload)
-        request = self.session.request(
-            self.method, request_data["request_url"], data=request_data["data"]
-        )
-        if request.status_code == 502:
-            raise SystemError("Codeforces is unavailable now.")
-        return self.get_response(request)
+        for r in range(3):
+            request_data = self.generate_request(method, **payload)
+            request = self.session.request(
+                self.method, request_data["request_url"], data=request_data["data"]
+            )
+            if request.status_code == 502:
+                logger.warning(
+                    "Codeforces is unavailable now, retrying in 20 seconds."
+                )
+                import time
+                time.sleep(20)
+            return self.get_response(request)
+        raise SystemError("Codeforces is unavailable now.")
 
     def __init__(self, api_key=None, secret=None, random_number=1000000, method="POST"):
         """
